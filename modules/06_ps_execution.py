@@ -3,8 +3,10 @@
 import os
 import sys
 
-os.chdir('/home/linuxadmin/scripts')
-sys.path.append('../classes')
+framework_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
+os.chdir(framework_path)
+sys.path.append('./classes')
+
 from emailreport import EmailReport
 from elasticstack import ElasticStack
 
