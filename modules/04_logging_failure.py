@@ -2,6 +2,7 @@
 
 import os
 import sys
+import configparser
 
 framework_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
 os.chdir(framework_path)
