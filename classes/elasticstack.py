@@ -8,8 +8,8 @@ from datetime import datetime
 from elasticsearch import Elasticsearch
 from ssl import create_default_context
 
-os.chdir('/home/linuxadmin/scripts')
-sys.path.append('./classes')
+#os.chdir('/home/linuxadmin/scripts')
+#sys.path.append('./classes')
 from emailreport import EmailReport
 
 ## MAIN CONFIGURATION FILE PATH
