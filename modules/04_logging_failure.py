@@ -15,7 +15,7 @@ from emailreport import EmailReport
 from elasticstack import ElasticStack
 
 ## Gloabl variable, if needs to compare against something
-THRESHOLD = 0
+THRESHOLD = 4
 
 ## MAIN CONFIGURATION FILE PATH
 MAIN_CONFIG = "configs/main.cfg"
