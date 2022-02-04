@@ -42,7 +42,7 @@ def main():
     # required a api call modification based on the query
     result = estack.es.count(index=index, body=estack.query)
 
-    # logic to trigger tge emails. set subject and body to send the emails to the listed recepients
+    # logic to trigger the emails. set subject and body to send the emails to the listed recepients
     if result['count'] < THRESHOLD:
         mailbody = "Log count during last 5 minutes reached to {count}".format(count=result['count'])
         em = EmailReport(subject="Alert - Elastic Log Failure Threshold", body=mailbody)
