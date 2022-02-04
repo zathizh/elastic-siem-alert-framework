@@ -1,0 +1,16 @@
+{% if artifacts is defined %}
+<!DOCTYPE html>
+<html>
+	<body>
+		<table border = "1">
+			{% for record in artifacts %}
+			<tr>
+				{% for item in record %}
+				<td>"{{ item }}"</td>
+				{% endfor %}
+			</tr>
+			{% endfor %}
+		</table>
+	</body>
+</html>
+{% endif %}

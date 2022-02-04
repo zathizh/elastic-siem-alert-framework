@@ -13,7 +13,7 @@ EMAIL_CONFIG = "configs/email.cfg"
 ## Changes to the email configuration can be done on the 'configs/email.cfg' file
 
 class EmailReport:
-    def __init__(self, subject="ELK Health Alert", body="EMAIL BODY"):
+    def __init__(self, subject="ELK Health Alert", body="EMAIL BODY", table=None):
         config = configparser.ConfigParser(delimiters=('='))
         config.read(EMAIL_CONFIG)
 
@@ -27,6 +27,7 @@ class EmailReport:
         message['To'] = self.recipients
         message['Subject'] = self.subject
         message.attach(MIMEText(body, 'plain'))
+        message.attach(MIMEText(table, 'html'))
         self.content = message.as_string()
 
     def sendEmail(self):
