@@ -37,12 +37,13 @@ def main():
 
     ## query needs to overwrite by each script.
     estack.query = query = {
+            "size": 0,
             "query": {
                 "bool": {
                     "must": [
                         {
                             "match": {
-                                "winlog.event_id": "4634"
+                                "winlog.event_id": "4625"
                                 }
                             }
                         ],
@@ -50,11 +51,19 @@ def main():
                         {
                             "range": {
                                 "@timestamp": {
-                                    "gte": "now-5m"
+                                    "gte": "now-1h"
                                     }
                                 }
                             }
                         ]
+                    }
+                },
+            "aggs": {
+                "username": {
+                    "terms": {
+                        "field": "user.name",
+                        "size": 100000
+                        }
                     }
                 }
             }
@@ -65,28 +74,16 @@ def main():
     # logic to trigger the emails. set subject and body to send the emails to the listed recepients
     count = result['hits']['total']['value']
     if count > THRESHOLD:
-        hits = result['hits']['hits']
-
-        protocol= config.get('GENERAL', 'SCHEME')
-        baseurl= config.get('GENERAL', 'FQDN')
-        port= config.get('GENERAL', 'PORT')
+        hits = result['aggregations']['username']['buckets']
 
         artifacts = []
-
         for record in hits:
             # from python 3.7 onwards datetime.fromisoformat is available
-            _index = record['_index']
-            _id = record['_id']
-            _timestamp = datetime.strptime(record['_source']['@timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%H:%M:%S")
-            _username = record['_source']['user']['name']
-            _computername = record['_source']['winlog']['computer_name']
-
-            _url = "{protocol}://{baseurl}:{port}/{_index}/_doc/{_id}".format(protocol=protocol, baseurl=baseurl, port=port, _index=_index, _id=_id)
-            artifacts.append([_timestamp, _username, _computername, _url])
+            artifacts.append([record['key'],record['doc_count']])
 
         table = template.render(artifacts=artifacts)
 
-        mailbody = "{count} user logoffs were detected during last 5 minutes\n\n".format(count=count)
+        mailbody = "{count} user logoffs were detected during last 1 hour\n\n".format(count=count)
         em = EmailReport(subject="Alert - Unusual Logoff", body=mailbody, table=table)
 
         em.sendEmail()

@@ -86,7 +86,7 @@ def main():
 
         table = template.render(artifacts=artifacts)
 
-        mailbody = "{count} user user login failures were detected during last 5 minutes\n\n".format(count=count)
+        mailbody = "{count} user login failures were detected during last 5 minutes\n\n".format(count=count)
         em = EmailReport(subject="Alert - Login Failure", body=mailbody, table=table)
         em.sendEmail()
 
