@@ -73,20 +73,23 @@ def main():
 
         header = ["Timestamp", "Computer Name", "Provider Name", "Image Path", "Service Name", "Service Type"]
         artifacts = [header]
+        counter = 0
         for record in hits:
             # from python 3.7 onwards datetime.fromisoformat is available
             source = record['_source']['winlog']
             _timestamp = datetime.strptime(record['_source']['@timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%H:%M:%S")
 
-            if source['event_data']['ImagePath'] in excluded_services:
+            if source['event_data']['ImagePath'] not in excluded_services:
                 artifacts.append([_timestamp, source['computer_name'],source['provider_name'],source['event_data']['ImagePath'],source['event_data']['ServiceName'],source['event_data']['ServiceType']])
+                counter+=1
 
-        table = template.render(artifacts=artifacts)
-
-        org = "[ " + config.get('GENERAL', 'ORG') + " ] "
-        mailbody = "{count} New Service installations were detected during last 5 minutes\n\n".format(count=count)
-        em = EmailReport(subject=org + "Alert - Service Installed [Excluding the defined exclusions]", body=mailbody, table=table)
-        em.sendEmail()
+        if counter :
+            table = template.render(artifacts=artifacts)
+            
+            org = "[ " + config.get('GENERAL', 'ORG') + " ] "
+            mailbody = "{counter}/{count} New Service installations were detected during last 5 minutes\n\n".format(counter=counter, count=count)
+            em = EmailReport(subject=org + "Alert - Service Installed [Excluding the defined exclusions]", body=mailbody, table=table)
+            em.sendEmail()
 
 if __name__ == '__main__':
     main()

@@ -64,16 +64,19 @@ def main():
     if count > THRESHOLD:
         hits = result['aggregations']['computername']['buckets']
 
-        artifacts = []
+        header = ["User Name", "Count"]
+        artifacts = [header]
         for record in hits:
             # from python 3.7 onwards datetime.fromisoformat is available
             artifacts.append([record['key'],record['doc_count']])
 
         table = template.render(artifacts=artifacts)
 
+        org = "[ " + config.get('GENERAL', 'ORG') + " ] "
         mailbody = "{count} Devices were active today \n\n".format(count=count)
-        em = EmailReport(subject="Alert - Active Devices", body=mailbody, table=table)
+        em = EmailReport(subject=org + "Alert - Active Devices", body=mailbody, table=table)
         em.sendEmail()
 
 if __name__ == '__main__':
     main()
+
