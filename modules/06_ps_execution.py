@@ -56,8 +56,9 @@ def main():
 
     # logic to trigger tge emails. set subject and body to send the emails to the listed recepients
     if result['count'] > THRESHOLD:
+        org = "[ " + config.get('GENERAL', 'ORG') + " ] "
         mailbody = "{count} PowerShell scriptblock loggings were detected during last 5 minutes".format(count=result['count'])
-        em = EmailReport(subject="Alert - PowerShell scriptblock logging", body=mailbody)
+        em = EmailReport(subject=org + "Alert - PowerShell scriptblock logging", body=mailbody)
         em.sendEmail()
 
 if __name__ == '__main__':

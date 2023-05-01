@@ -71,7 +71,8 @@ def main():
         baseurl= config.get('GENERAL', 'FQDN')
         port= config.get('GENERAL', 'PORT')
 
-        artifacts = []
+        header =  ["Timestamp", "User Name", "Computer Name", "URL"]
+        artifacts = [header]
 
         for record in hits:
             # from python 3.7 onwards datetime.fromisoformat is available
@@ -86,8 +87,9 @@ def main():
 
         table = template.render(artifacts=artifacts)
 
+        org = "[ " + config.get('GENERAL', 'ORG') + " ] "
         mailbody = "{count} user login failures were detected during last 5 minutes\n\n".format(count=count)
-        em = EmailReport(subject="Alert - Login Failure", body=mailbody, table=table)
+        em = EmailReport(subject=org + "Alert - Login Failure", body=mailbody, table=table)
         em.sendEmail()
 
 if __name__ == '__main__':

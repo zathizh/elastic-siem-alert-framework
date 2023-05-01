@@ -44,8 +44,9 @@ def main():
 
     # logic to trigger the emails. set subject and body to send the emails to the listed recepients
     if result['count'] < THRESHOLD:
+        org = "[ " + config.get('GENERAL', 'ORG') + " ] "
         mailbody = "Log count during last 5 minutes reached to {count}".format(count=result['count'])
-        em = EmailReport(subject="Alert - Elastic Log Failure Threshold", body=mailbody)
+        em = EmailReport(subject=org + "Alert - Elastic Log Failure Threshold", body=mailbody)
         em.sendEmail()
 
 if __name__ == '__main__':

@@ -27,7 +27,8 @@ class EmailReport:
         message['To'] = self.recipients
         message['Subject'] = self.subject
         message.attach(MIMEText(body, 'plain'))
-        message.attach(MIMEText(table, 'html'))
+        if table:
+            message.attach(MIMEText(table, 'html'))
         self.content = message.as_string()
 
     def sendEmail(self):

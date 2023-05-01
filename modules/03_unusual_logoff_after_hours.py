@@ -43,7 +43,7 @@ def main():
                     "must": [
                         {
                             "match": {
-                                "winlog.event_id": "4625"
+                                "winlog.event_id": "4634"
                                 }
                             }
                         ],
@@ -76,15 +76,17 @@ def main():
     if count > THRESHOLD:
         hits = result['aggregations']['username']['buckets']
 
-        artifacts = []
+        header = ["User Name", "Count"]
+        artifacts = [header]
         for record in hits:
             # from python 3.7 onwards datetime.fromisoformat is available
             artifacts.append([record['key'],record['doc_count']])
 
         table = template.render(artifacts=artifacts)
 
+        org = "[ " + config.get('GENERAL', 'ORG') + " ] "
         mailbody = "{count} user logoffs were detected during last 1 hour\n\n".format(count=count)
-        em = EmailReport(subject="Alert - Unusual Logoff", body=mailbody, table=table)
+        em = EmailReport(subject=org + "Alert - Unusual Logoff", body=mailbody, table=table)
 
         em.sendEmail()
 
