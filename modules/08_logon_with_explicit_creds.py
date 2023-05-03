@@ -68,7 +68,7 @@ def main():
     # logic to trigger tge emails. set subject and body to send the emails to the listed recepients
     count = result['hits']['total']['value']
     if count > THRESHOLD:
-        excluded_items = list(map(str.strip, open(ITEM_PATH_EXCLUSIONS, 'r+').readlines()))
+        excluded_items = list(map(str.strip, open(ITEM_PATH_EXCLUSIONS, 'r').readlines()))
         hits = result['hits']['hits']
 
         header = ["Timestamp", "Computer Name", "Executable Path", "Subject User", "Target User", "Target", "Target Server Name"]
@@ -78,11 +78,11 @@ def main():
             # from python 3.7 onwards datetime.fromisoformat is available
             source = record['_source']
             event_data = source['winlog']['event_data']
-            executable = source['process']['executable']
+            item = source['process']['executable']
 
             _timestamp = datetime.strptime(source['@timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%H:%M:%S")
 
-            if executable not in excluded_items:
+            if item not in excluded_items:
                 artifacts.append([_timestamp, source['winlog']['computer_name'], source['process']['executable'], event_data['SubjectUserName'], event_data['TargetUserName'], event_data['TargetInfo'], event_data['TargetServerName']])
                 counter+=1
 

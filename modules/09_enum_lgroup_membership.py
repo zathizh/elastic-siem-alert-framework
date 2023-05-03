@@ -20,7 +20,7 @@ THRESHOLD = 0
 ## MAIN CONFIGURATION FILE PATH
 MAIN_CONFIG = "configs/main.cfg"
 TEMPLATE_FILE = "table_template.html"
-ITEM_IMAGE_PATH_EXCLUSIONS = "exclusions/services/image_paths.lst" 
+ITEM_PATH_EXCLUSIONS = "exclusions/processes/caller_process.lst"
 
 def main():
     # create elastic stack object
@@ -44,7 +44,7 @@ def main():
                     "must": [
                         {
                             "match": {
-                                "winlog.event_id": "7045"
+                                "winlog.event_id": "4798"
                                 }
                             }
                         ],
@@ -52,7 +52,7 @@ def main():
                         {
                             "range": {
                                 "@timestamp": {
-                                    "gte": "now-5m"
+                                    "gte": "now-1d"
                                     }
                                 }
                             }
@@ -62,35 +62,36 @@ def main():
             }
 
     # required a api call modification based on the query
-    #result = estack.es.count(index=index, body=estack.query)
     result = estack.es.search(index=index, body=estack.query,  size=1000)
 
     # logic to trigger tge emails. set subject and body to send the emails to the listed recepients
     count = result['hits']['total']['value']
     if count > THRESHOLD:
-        excluded_items = list(map(str.strip, open(ITEM_IMAGE_PATH_EXCLUSIONS, 'r').readlines()))
+        excluded_items = list(map(str.strip, open(ITEM_PATH_EXCLUSIONS, 'r').readlines()))
         hits = result['hits']['hits']
 
-        header = ["Timestamp", "Computer Name", "Provider Name", "Image Path", "Service Name", "Service Type"]
+        header = ["Timestamp", "Computer Name", "Executable Path", "Subject User", "Target User", "Target", "Target Server Name"]
         artifacts = [header]
         counter = 0
         for record in hits:
             # from python 3.7 onwards datetime.fromisoformat is available
-            source = record['_source']['winlog']
-            event_data = source['event_data']
-            item = source['event_data']['ImagePath']
-            _timestamp = datetime.strptime(record['_source']['@timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%H:%M:%S")
+            source = record['_source']
+            event_data = source['winlog']['event_data']
+            item = event_data['CallerProcessName']
+            print(event_data['CallerProcessName'])
+
+            _timestamp = datetime.strptime(source['@timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%H:%M:%S")
 
             if item not in excluded_items:
-                artifacts.append([_timestamp, source['computer_name'], source['provider_name'], event_data['ImagePath'], event_data['ServiceName'], event_data['ServiceType']])
+                artifacts.append([_timestamp, source['winlog']['computer_name'], event_data['TargetUserName'], event_data['CallerProcessName'], event_data['SubjectUserName']])
                 counter+=1
 
         if counter :
             table = template.render(artifacts=artifacts)
             
             org = "[ " + config.get('GENERAL', 'ORG') + " ] "
-            mailbody = "{counter}/{count} New Service installations were detected during last 5 minutes\n\n".format(counter=counter, count=count)
-            em = EmailReport(subject=org + "Alert - Service Installed [Excluding the defined exclusions]", body=mailbody, table=table)
+            mailbody = "{counter}/{count} Local group membership enumeration were detected during last 5 minutes\n\n".format(counter=counter, count=count)
+            em = EmailReport(subject=org + "Alert - Local group membership enumerated [Excluding the defined exclusions]", body=mailbody, table=table)
             em.sendEmail()
 
 if __name__ == '__main__':
