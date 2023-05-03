@@ -87,8 +87,6 @@ def main():
                 counter+=1
 
         if counter :
-            pass
-            print(artifacts)
             table = template.render(artifacts=artifacts)
             
             org = "[ " + config.get('GENERAL', 'ORG') + " ] "
