@@ -20,7 +20,7 @@ THRESHOLD = 0
 ## MAIN CONFIGURATION FILE PATH
 MAIN_CONFIG = "configs/main.cfg"
 TEMPLATE_FILE = "table_template.html"
-ITEM_PATH_EXCLUSIONS = "exclusions/users/sec_global_group_user.lst"
+ITEM_PATH_EXCLUSIONS = "exclusions/users/sec_universal_group_user.lst"
 
 def main():
     # create elastic stack object
@@ -44,7 +44,7 @@ def main():
                     "must": [
                         {
                             "match": {
-                                "winlog.event_id": "4728"
+                                "winlog.event_id": "4756"
                                 }
                             }
                         ],
@@ -88,8 +88,8 @@ def main():
             table = template.render(artifacts=artifacts)
             
             org = "[ " + config.get('GENERAL', 'ORG') + " ] "
-            mailbody = "{counter}/{count} Adding a member to security-enabled global group events were detected during last 5 minutes\n\n".format(counter=counter, count=count)
-            em = EmailReport(subject=org + "Alert - A member added to security-enabled global group [Excluding the defined exclusions]", body=mailbody, table=table)
+            mailbody = "{counter}/{count} Adding a member to security-enabled universal group events were detected during last 5 minutes\n\n".format(counter=counter, count=count)
+            em = EmailReport(subject=org + "Alert - A member added to security-enabled universal group [Excluding the defined exclusions]", body=mailbody, table=table)
             em.sendEmail()
 
 if __name__ == '__main__':

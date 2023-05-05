@@ -20,7 +20,6 @@ THRESHOLD = 0
 ## MAIN CONFIGURATION FILE PATH
 MAIN_CONFIG = "configs/main.cfg"
 TEMPLATE_FILE = "table_template.html"
-ITEM_PATH_EXCLUSIONS = "exclusions/users/sec_global_group_user.lst"
 
 def main():
     # create elastic stack object
@@ -44,7 +43,7 @@ def main():
                     "must": [
                         {
                             "match": {
-                                "winlog.event_id": "4728"
+                                "winlog.event_id": "1100"
                                 }
                             }
                         ],
@@ -66,31 +65,26 @@ def main():
 
     # logic to trigger tge emails. set subject and body to send the emails to the listed recepients
     count = result['hits']['total']['value']
+
     if count > THRESHOLD:
-        excluded_items = list(map(str.strip, open(ITEM_PATH_EXCLUSIONS, 'r').readlines()))
         hits = result['hits']['hits']
 
-        header = ["Timestamp", "Computer Name", "Executable Path", "Subject User", "Target User", "Target", "Target Server Name"]
+        header = ["Timestamp", "Computer Name", "Action"]
         artifacts = [header]
-        counter = 0
         for record in hits:
+            print(record)
             # from python 3.7 onwards datetime.fromisoformat is available
             source = record['_source']
-            event_data = source['winlog']['event_data']
-            item = event_data['SubjectUserName']
             _timestamp = datetime.strptime(source['@timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%H:%M:%S")
-
-            if item not in excluded_items:
-                artifacts.append([_timestamp, source['winlog']['computer_name'], event_data['SubjectUserName'], event_data['TargetUserName'], event_data['SubjectUserSid'], event_data['PrivilegeList'], event_data['MemberName']])
-                counter+=1
-
-        if counter :
-            table = template.render(artifacts=artifacts)
             
-            org = "[ " + config.get('GENERAL', 'ORG') + " ] "
-            mailbody = "{counter}/{count} Adding a member to security-enabled global group events were detected during last 5 minutes\n\n".format(counter=counter, count=count)
-            em = EmailReport(subject=org + "Alert - A member added to security-enabled global group [Excluding the defined exclusions]", body=mailbody, table=table)
-            em.sendEmail()
+            artifacts.append([_timestamp, source['winlog']['computer_name'], source['event']['action']])
+
+        table = template.render(artifacts=artifacts)
+            
+        org = "[ " + config.get('GENERAL', 'ORG') + " ] "
+        mailbody = "Logging service shutdowns were detected during last 5 minutes\n\n"
+        em = EmailReport(subject=org + "Alert - Logging service shutdown", body=mailbody, table=table)
+        em.sendEmail()
 
 if __name__ == '__main__':
     main()
