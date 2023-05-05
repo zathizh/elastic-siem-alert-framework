@@ -52,7 +52,7 @@ def main():
                         {
                             "range": {
                                 "@timestamp": {
-                                    "gte": "now-1d"
+                                    "gte": "now-5m"
                                     }
                                 }
                             }
