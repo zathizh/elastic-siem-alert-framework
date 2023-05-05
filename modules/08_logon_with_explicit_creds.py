@@ -52,7 +52,7 @@ def main():
                         {
                             "range": {
                                 "@timestamp": {
-                                    "gte": "now-5m"
+                                    "gte": "now-1d"
                                     }
                                 }
                             }
@@ -78,12 +78,16 @@ def main():
             # from python 3.7 onwards datetime.fromisoformat is available
             source = record['_source']
             event_data = source['winlog']['event_data']
-            item = source['process']['executable']
+            if source['process'].get('executable') is not None:
+                item = source['process']['executable']
 
-            _timestamp = datetime.strptime(source['@timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%H:%M:%S")
+                _timestamp = datetime.strptime(source['@timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%H:%M:%S")
 
-            if item not in excluded_items:
-                artifacts.append([_timestamp, source['winlog']['computer_name'], source['process']['executable'], event_data['SubjectUserName'], event_data['TargetUserName'], event_data['TargetInfo'], event_data['TargetServerName']])
+                if item not in excluded_items:
+                    artifacts.append([_timestamp, source['winlog']['computer_name'], source['process']['executable'], event_data['SubjectUserName'], event_data['TargetUserName'], event_data['TargetInfo'], event_data['TargetServerName']])
+                    counter+=1
+            else:
+                artifacts.append([_timestamp, source['winlog']['computer_name'], source['process'], event_data['SubjectUserName'], event_data['TargetUserName'], event_data['TargetInfo'], event_data['TargetServerName']])
                 counter+=1
 
         if counter :
