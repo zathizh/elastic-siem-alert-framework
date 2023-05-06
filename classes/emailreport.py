@@ -32,7 +32,12 @@ class EmailReport:
         self.content = message.as_string()
 
     def sendEmail(self):
-        s = smtplib.SMTP(self.smtp_server)
-        s.sendmail(self.sender_email, self.recipients.split(','), self.content)
-        s.quit()
+        try :
+            s = smtplib.SMTP(self.smtp_server)
+            s.sendmail(self.sender_email, self.recipients.split(','), self.content)
+            s.quit()
+        except socket_error as err : 
+            print("[-] Unable to connect to mail Server : " + err)
+        except Exception as err :
+            print(err)
 
