@@ -40,8 +40,8 @@ class EmailReport:
             s.quit()
         except socket_error as err : 
             traceback.print_exc
+            print("------------------------------------------------", file=sys.stderr)
         except Exception as err :
             traceback.print_exc
-        finally:
             print("------------------------------------------------", file=sys.stderr)
 
