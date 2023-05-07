@@ -1,5 +1,6 @@
 #! /usr/bin/python3
 
+import sys
 import smtplib
 import traceback
 import configparser
@@ -41,4 +42,6 @@ class EmailReport:
             traceback.print_exc
         except Exception as err :
             traceback.print_exc
+        finally:
+            print("------------------------------------------------", file=sys.stderr)
 
