@@ -11,11 +11,14 @@ framework_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__
 os.chdir(framework_path)
 sys.path.append('./classes')
 
+from handler import *
+from argumentparser import *
 from emailreport import EmailReport
 from elasticstack import ElasticStack
 
 ## Gloabl variable, if needs to compare against something
 THRESHOLD = 0
+PERIOD = '5m'
 
 ## MAIN CONFIGURATION FILE PATH
 MAIN_CONFIG = "configs/main.cfg"
@@ -23,6 +26,11 @@ TEMPLATE_FILE = "table_template.html"
 ITEM_PATH_EXCLUSIONS = "exclusions/processes/executable_paths.lst"
 
 def main():
+    # handling debug arguments
+    args = getArgs()
+    global PERIOD
+    PERIOD = args.range or PERIOD
+
     # create elastic stack object
     estack = ElasticStack()
 
@@ -37,33 +45,12 @@ def main():
 
     index = config.get('CONFIGURATIONS', 'INDEX')
 
-    ## query needs to overwrite by each script.
-    estack.query = query = {
-            "query": {
-                "bool": {
-                    "must": [
-                        {
-                            "match": {
-                                "winlog.event_id": "4648"
-                                }
-                            }
-                        ],
-                    "filter": [
-                        {
-                            "range": {
-                                "@timestamp": {
-                                    "gte": "now-5m"
-                                    }
-                                }
-                            }
-                        ]
-                    }
-                }
-            }
+    ## query id needs to change for each script
+    estack.setRangeQuery(event_id=4648, period=PERIOD)
 
     # required a api call modification based on the query
-    #result = estack.es.count(index=index, body=estack.query)
-    result = estack.es.search(index=index, body=estack.query,  size=1000)
+    result = estack.es.search(index=index, body=estack.query, size=1000)
+    debugging(args, query=estack.query, result=result)
 
     # logic to trigger tge emails. set subject and body to send the emails to the listed recepients
     count = result['hits']['total']['value']
@@ -78,15 +65,18 @@ def main():
             # from python 3.7 onwards datetime.fromisoformat is available
             source = record['_source']
             event_data = source['winlog']['event_data']
+            _timestamp = datetime.strptime(source['@timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%H:%M:%S")
             if source['process'].get('executable') is not None:
                 item = source['process']['executable']
 
-                _timestamp = datetime.strptime(source['@timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%H:%M:%S")
-
                 if item not in excluded_items:
-                    artifacts.append([_timestamp, source['winlog']['computer_name'], source['process']['executable'], event_data['SubjectUserName'], event_data['TargetUserName'], event_data['TargetInfo'], event_data['TargetServerName']])
+                    if args.debug:
+                        print(item)
+                    artifacts.append([_timestamp, source['winlog']['computer_name'], item, event_data['SubjectUserName'], event_data['TargetUserName'], event_data['TargetInfo'], event_data['TargetServerName']])
                     counter+=1
             else:
+                if args.debug:
+                    print(source['process'])
                 artifacts.append([_timestamp, source['winlog']['computer_name'], source['process'], event_data['SubjectUserName'], event_data['TargetUserName'], event_data['TargetInfo'], event_data['TargetServerName']])
                 counter+=1
 
@@ -94,7 +84,7 @@ def main():
             table = template.render(artifacts=artifacts)
             
             org = "[ " + config.get('GENERAL', 'ORG') + " ] "
-            mailbody = "{counter}/{count} Logom attempts were detected during last 5 minutes\n\n".format(counter=counter, count=count)
+            mailbody = "{counter}/{count} Logon attempts were detected during last 5 minutes\n\n".format(counter=counter, count=count)
             em = EmailReport(subject=org + "Alert - Logon attempted with explicit credentials  [Excluding the defined exclusions]", body=mailbody, table=table)
             em.sendEmail()
 

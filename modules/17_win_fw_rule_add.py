@@ -11,11 +11,14 @@ framework_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__
 os.chdir(framework_path)
 sys.path.append('./classes')
 
+from handler import *
+from argumentparser import *
 from emailreport import EmailReport
 from elasticstack import ElasticStack
 
 ## Gloabl variable, if needs to compare against something
 THRESHOLD = 0
+PERIOD = '5m'
 
 ## MAIN CONFIGURATION FILE PATH
 MAIN_CONFIG = "configs/main.cfg"
@@ -23,6 +26,11 @@ TEMPLATE_FILE = "table_template.html"
 ITEM_PATH_EXCLUSIONS = "exclusions/firewall/rules_added.lst"
 
 def main():
+    # handling debug arguments
+    args = getArgs()
+    global PERIOD
+    PERIOD = args.range or PERIOD
+
     # create elastic stack object
     estack = ElasticStack()
 
@@ -37,32 +45,12 @@ def main():
 
     index = config.get('CONFIGURATIONS', 'INDEX')
 
-    ## query needs to overwrite by each script.
-    estack.query = query = {
-            "query": {
-                "bool": {
-                    "must": [
-                        {
-                            "match": {
-                                "winlog.event_id": "4946"
-                                }
-                            }
-                        ],
-                    "filter": [
-                        {
-                            "range": {
-                                "@timestamp": {
-                                    "gte": "now-5m"
-                                    }
-                                }
-                            }
-                        ]
-                    }
-                }
-            }
+    ## query id needs to change for each script
+    estack.setRangeQuery(event_id=4946, period=PERIOD)
 
     # required a api call modification based on the query
-    result = estack.es.search(index=index, body=estack.query,  size=1000)
+    result = estack.es.search(index=index, body=estack.query, size=1000)
+    debugging(args, query=estack.query, result=result)
 
     # logic to trigger tge emails. set subject and body to send the emails to the listed recepients
     count = result['hits']['total']['value']
@@ -82,7 +70,9 @@ def main():
             _timestamp = datetime.strptime(source['@timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%H:%M:%S")
 
             if item not in excluded_items:
-                artifacts.append([_timestamp, source['winlog']['computer_name'], event_data['RuleId'], event_data['RuleName']])
+                if args.debug:
+                    print(record)
+                artifacts.append([_timestamp, source['winlog']['computer_name'], event_data['RuleId'], item])
                 counter+=1
 
         if counter :

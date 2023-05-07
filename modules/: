@@ -2,20 +2,20 @@
 
 import os
 import sys
+import argparse
 import configparser
 
 framework_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
 os.chdir(framework_path)
 sys.path.append('./classes')
 
-from handler import *
-from argumentparser import *
 from emailreport import EmailReport
 from elasticstack import ElasticStack
+from argumentparser import *
 
 ## Gloabl variable, if needs to compare against something
 THRESHOLD = 300
-PERIOD = '5m'
+PERIOD = 5
 
 ## MAIN CONFIGURATION FILE PATH
 MAIN_CONFIG = "configs/main.cfg"
@@ -23,9 +23,6 @@ MAIN_CONFIG = "configs/main.cfg"
 def main():
     # handling debug arguments
     args = getArgs()
-    global PERIOD
-    PERIOD = args.range or PERIOD
-
     # create elastic stack object
     estack = ElasticStack()
 
@@ -35,12 +32,20 @@ def main():
 
     index = config.get('CONFIGURATIONS', 'INDEX')
 
-    ## query id needs to change for each script
-    estack.basicQuery(period=PERIOD)
+    ## query needs to overwrite by each script.
+    estack.query = query = {
+            "query":{
+                "range": {
+                    "@timestamp": {
+                        "gte": "now-5m"
+                        }
+                    }
+                }
+            }
+
 
     # required a api call modification based on the query
     result = estack.es.count(index=index, body=estack.query)
-    debugging(args, query=estack.query, result=result)
 
     # logic to trigger the emails. set subject and body to send the emails to the listed recepients
     if result['count'] < THRESHOLD:
