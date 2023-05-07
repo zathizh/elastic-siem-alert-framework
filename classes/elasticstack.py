@@ -89,7 +89,7 @@ class ElasticStack:
                             {
                                 "range": {
                                     "@timestamp": {
-                                        "gte": "now-" + PERIOD
+                                        "gte": "now-" + period
                                         }
                                     }
                                 }
