@@ -1,6 +1,7 @@
 #! /usr/bin/python3
 
 import smtplib
+import traceback
 import configparser
 
 from email.mime.text import MIMEText
@@ -37,7 +38,7 @@ class EmailReport:
             s.sendmail(self.sender_email, self.recipients.split(','), self.content)
             s.quit()
         except socket_error as err : 
-            print("[-] Unable to connect to mail Server : " + err)
+            traceback.print_exc
         except Exception as err :
-            print(err)
+            traceback.print_exc
 
