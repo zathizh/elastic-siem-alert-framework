@@ -86,7 +86,8 @@ def main():
             org = "[ " + config.get('GENERAL', 'ORG') + " ] "
             mailbody = "{counter}/{count} Logon attempts were detected during last 5 minutes\n\n".format(counter=counter, count=count)
             em = EmailReport(subject=org + "Alert - Logon attempted with explicit credentials  [Excluding the defined exclusions]", body=mailbody, table=table)
-            em.sendEmail()
+            if args.email:
+                em.sendEmail()
 
 if __name__ == '__main__':
     main()

@@ -38,3 +38,72 @@ class ElasticStack:
                 )
         self.query = ""
 
+    def basicQuery(self, period):
+        self.query = {
+                "query":{
+                    "range": {
+                        "@timestamp": {
+                            "gte": "now-" + period
+                            }
+                        }
+                    }
+                }
+
+    def setRangeQuery(self, event_id, period):
+        self.query = {
+                "query": {
+                    "bool": {
+                        "must": [
+                            {
+                                "match": {
+                                    "winlog.event_id": event_id
+                                    }
+                                }
+                            ],
+                        "filter": [
+                            {
+                                "range": {
+                                    "@timestamp": {
+                                        "gte": "now-" + period
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+
+    def setUserQuery(self, event_id, period):
+        self.query = {
+                "size": 0,
+                "query": {
+                    "bool": {
+                        "must": [
+                            {
+                                "match": {
+                                    "winlog.event_id": event_id
+                                    }
+                                }
+                            ],
+                        "filter": [
+                            {
+                                "range": {
+                                    "@timestamp": {
+                                        "gte": "now-" + PERIOD
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                "aggs": {
+                    "username": {
+                        "terms": {
+                            "field": "user.name",
+                            "size": 100000
+                            }
+                        }
+                    }
+                }
+
+

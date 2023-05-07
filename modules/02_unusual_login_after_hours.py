@@ -67,7 +67,8 @@ def main():
         org = "[ " + config.get('GENERAL', 'ORG') + " ] "
         mailbody = "{count} user loggins were detected during last hour\n\n".format(count=count)
         em = EmailReport(subject=org + "Alert - Unusual Successfull Login", body=mailbody, table=table)
-        em.sendEmail()
+        if args.email:
+            em.sendEmail()
 
 if __name__ == '__main__':
     main()

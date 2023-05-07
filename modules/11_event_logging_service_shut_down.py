@@ -73,7 +73,8 @@ def main():
         org = "[ " + config.get('GENERAL', 'ORG') + " ] "
         mailbody = "Logging service shutdowns were detected during last 5 minutes\n\n"
         em = EmailReport(subject=org + "Alert - Logging service shutdown", body=mailbody, table=table)
-        em.sendEmail()
+        if args.email:
+            em.sendEmail()
 
 if __name__ == '__main__':
     main()

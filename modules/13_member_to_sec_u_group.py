@@ -80,7 +80,8 @@ def main():
             org = "[ " + config.get('GENERAL', 'ORG') + " ] "
             mailbody = "{counter}/{count} Adding a member to security-enabled universal group events were detected during last 5 minutes\n\n".format(counter=counter, count=count)
             em = EmailReport(subject=org + "Alert - A member added to security-enabled universal group [Excluding the defined exclusions]", body=mailbody, table=table)
-            em.sendEmail()
+            if args.email:
+                em.sendEmail()
 
 if __name__ == '__main__':
     main()

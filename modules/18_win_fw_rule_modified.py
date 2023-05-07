@@ -81,7 +81,8 @@ def main():
             org = "[ " + config.get('GENERAL', 'ORG') + " ] "
             mailbody = "{counter}/{count} Rule(s) added to Windows Firewall exception list during last 5 minutes\n\n".format(counter=counter, count=count)
             em = EmailReport(subject=org + "Alert - A rule added to Windows Firewall exception list [Excluding the defined exclusions]", body=mailbody, table=table)
-            em.sendEmail()
+            if args.email:
+                em.sendEmail()
 
 if __name__ == '__main__':
     main()

@@ -88,7 +88,8 @@ def main():
         org = "[ " + config.get('GENERAL', 'ORG') + " ] "
         mailbody = "{count} Devices were active today \n\n".format(count=count)
         em = EmailReport(subject=org + "Alert - Active Devices", body=mailbody, table=table)
-        em.sendEmail()
+        if args.email:
+            em.sendEmail()
 
 if __name__ == '__main__':
     main()

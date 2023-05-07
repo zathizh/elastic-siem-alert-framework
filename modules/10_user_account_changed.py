@@ -73,7 +73,8 @@ def main():
         org = "[ " + config.get('GENERAL', 'ORG') + " ] "
         mailbody = "User account changes detected during last 5 minutes\n\n"
         em = EmailReport(subject=org + "Alert - User account was changed", body=mailbody, table=table)
-        em.sendEmail()
+        if args.email:
+            em.sendEmail()
 
 if __name__ == '__main__':
     main()
