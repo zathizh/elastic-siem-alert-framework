@@ -39,7 +39,7 @@ def main():
     estack.setRangeQuery(event_id=4104, period=PERIOD)
 
     # required a api call modification based on the query
-    result = estack.es.search(index=index, body=estack.query, size=1000)
+    result = estack.es.count(index=index, body=estack.query)
     debugging(args, query=estack.query, result=result)
 
     # logic to trigger tge emails. set subject and body to send the emails to the listed recepients

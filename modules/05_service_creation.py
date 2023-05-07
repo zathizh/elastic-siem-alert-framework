@@ -70,7 +70,7 @@ def main():
 
             if item not in excluded_items:
                 if args.debug:
-                    item
+                    print(item)
                 artifacts.append([_timestamp, source['computer_name'], source['provider_name'], event_data['ImagePath'], event_data['ServiceName'], event_data['ServiceType']])
                 counter+=1
 
