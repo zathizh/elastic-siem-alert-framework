@@ -45,8 +45,7 @@ def controller(hits, header, evt, fieldList, debug, src=None):
         _timestamp = datetime.strptime(source['@timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%H:%M:%S")
 
         if debug:
-#            print(record)
-            print(list(map(event_data.get, fieldList)))
+            print(event_data)
         artifacts.append([_timestamp, comp_name] + list(map(event_data.get, fieldList)))
 
     return artifacts
