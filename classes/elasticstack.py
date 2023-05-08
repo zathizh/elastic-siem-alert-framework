@@ -73,7 +73,7 @@ class ElasticStack:
                     }
                 }
 
-    def setUserQuery(self, event_id, period):
+    def setElementQuery(self, event_id, period):
         self.query = {
                 "size": 0,
                 "query": {
@@ -97,7 +97,7 @@ class ElasticStack:
                         }
                     },
                 "aggs": {
-                    "username": {
+                    "element": {
                         "terms": {
                             "field": "user.name",
                             "size": 100000

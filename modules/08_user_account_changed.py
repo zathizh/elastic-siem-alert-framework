@@ -5,8 +5,6 @@ import sys
 import jinja2
 import configparser
 
-from datetime import datetime
-
 framework_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
 os.chdir(framework_path)
 sys.path.append('./classes')
@@ -17,7 +15,7 @@ from emailreport import EmailReport
 from elasticstack import ElasticStack
 
 ## Gloabl variable, if needs to compare against something
-THRESHOLD = 4
+THRESHOLD = 0
 PERIOD = '5m'
 
 ## MAIN CONFIGURATION FILE PATH
@@ -45,40 +43,28 @@ def main():
     index = config.get('CONFIGURATIONS', 'INDEX')
 
     ## query id needs to change for each script
-    estack.setRangeQuery(event_id=4625, period=PERIOD)
+    estack.setRangeQuery(event_id=4738, period=PERIOD)
 
     # required a api call modification based on the query
     result = estack.es.search(index=index, body=estack.query, size=1000)
     debugging(args, query=estack.query, result=result)
 
-    # logic to trigger the emails. set subject and body to send the emails to the listed recepients
+    # logic to trigger tge emails. set subject and body to send the emails to the listed recepients
     count = result['hits']['total']['value']
     if count > THRESHOLD:
         hits = result['hits']['hits']
 
-        protocol= config.get('GENERAL', 'SCHEME')
-        baseurl= config.get('GENERAL', 'FQDN')
-        port= config.get('GENERAL', 'PORT')
+        header = ["Timestamp", "Computer Name", "Target User Name", "User Account Control", "Subject User Name", "NewUACList"]
+        evt = "event_data"
+        fieldList = ["TargetUserName", "UserAccountControl", "SubjectUserName", "NewUACList"]
 
-        header =  ["Timestamp", "User Name", "Computer Name", "URL"]
-        artifacts = [header]
-
-        for record in hits:
-            # from python 3.7 onwards datetime.fromisoformat is available
-            _index = record['_index']
-            _id = record['_id']
-            _timestamp = datetime.strptime(record['_source']['@timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%H:%M:%S")
-            _username = record['_source']['user']['name']
-            _computername = record['_source']['winlog']['computer_name']
-
-            _url = "{protocol}://{baseurl}:{port}/{_index}/_doc/{_id}".format(protocol=protocol, baseurl=baseurl, port=port, _index=_index, _id=_id)
-            artifacts.append([_timestamp, _username, _computername, _url])
+        artifacts = controller(hits=hits, header=header, evt=evt, fieldList=fieldList, debug=args.debug)
 
         table = template.render(artifacts=artifacts)
-
+            
         org = "[ " + config.get('GENERAL', 'ORG') + " ] "
-        mailbody = "{count} user login failures were detected during last 5 minutes\n\n".format(count=count)
-        em = EmailReport(subject=org + "Alert - Login Failure", body=mailbody, table=table)
+        mailbody = "User account changes detected during last 5 minutes\n\n"
+        em = EmailReport(subject=org + "Alert - User account was changed", body=mailbody, table=table)
         if args.email:
             em.sendEmail()
 

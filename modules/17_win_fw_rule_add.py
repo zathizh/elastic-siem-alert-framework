@@ -5,8 +5,6 @@ import sys
 import jinja2
 import configparser
 
-from datetime import datetime
-
 framework_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
 os.chdir(framework_path)
 sys.path.append('./classes')
@@ -55,25 +53,14 @@ def main():
     # logic to trigger tge emails. set subject and body to send the emails to the listed recepients
     count = result['hits']['total']['value']
     if count > THRESHOLD:
-        excluded_items = list(map(str.strip, open(ITEM_PATH_EXCLUSIONS, 'r').readlines()))
+        excludedItems = list(map(str.strip, open(ITEM_PATH_EXCLUSIONS, 'r').readlines()))
         hits = result['hits']['hits']
+        itemName = "RuleName"
 
         header = ["Timestamp", "Computer Name", "Rule Id", "Rule Name"]
-        artifacts = [header]
-        counter = 0
-        for record in hits:
-            # from python 3.7 onwards datetime.fromisoformat is available
-            source = record['_source']
-            event_data = source['winlog']['event_data']
-            item = event_data['RuleName']
+        fieldList = ["RuleId", itemName]
 
-            _timestamp = datetime.strptime(source['@timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%H:%M:%S")
-
-            if item not in excluded_items:
-                if args.debug:
-                    print(record)
-                artifacts.append([_timestamp, source['winlog']['computer_name'], event_data['RuleId'], item])
-                counter+=1
+        counter, artifacts = controller_exc(excludedItems=excludedItems, hits=hits, header=header, itemName=itemName, fieldList=fieldList, debug=args.debug)
 
         if counter :
             table = template.render(artifacts=artifacts)

@@ -44,35 +44,50 @@ def main():
 
     index = config.get('CONFIGURATIONS', 'INDEX')
 
-    ## query id needs to change for each script
-    estack.setRangeQuery(event_id=4738, period=PERIOD)
+    ## query needs to overwrite by each script.
+    estack.query = {
+            "size": 0,
+            "query": {
+                "range": {
+                    "@timestamp": {
+                        "gte": "now-" + PERIOD,
+                        "lte": "now"
+                        }
+                    }
+                },
+            "aggs": {
+                "element": {
+                    "terms": {
+                        "field": "winlog.computer_name",
+                        "size": 100000
+                        }
+                    }
+                }
+            }
 
     # required a api call modification based on the query
-    result = estack.es.search(index=index, body=estack.query, size=1000)
-    debugging(args, query=estack.query, result=result)
+    result = estack.es.search(index=index, body=estack.query,  size=1000)
+    if args.object:
+        print(result)
+    if args.query:
+        print(estack.query)
 
-    # logic to trigger tge emails. set subject and body to send the emails to the listed recepients
-    count = result['hits']['total']['value']
+    # logic to trigger the emails. set subject and body to send the emails to the listed recepients
+    count = len(result['aggregations']['element']['buckets'])
     if count > THRESHOLD:
-        hits = result['hits']['hits']
+        hits = result['aggregations']['element']['buckets']
 
-        header = ["Timestamp", "Computer Name", "Target User Name", "User Account Control", "Subject User Name", "NewUACList"]
+        header = ["User Name", "Count"]
         artifacts = [header]
         for record in hits:
             # from python 3.7 onwards datetime.fromisoformat is available
-            if args.debug:
-                print(record)
-            source = record['_source']
-            event_data = source['winlog']['event_data']
-            _timestamp = datetime.strptime(source['@timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%H:%M:%S")
-
-            artifacts.append([_timestamp, source['winlog']['computer_name'], event_data['TargetUserName'], event_data['UserAccountControl'], event_data['SubjectUserName'], event_data['NewUACList']])
+            artifacts.append([record['key'],record['doc_count']])
 
         table = template.render(artifacts=artifacts)
-            
+
         org = "[ " + config.get('GENERAL', 'ORG') + " ] "
-        mailbody = "User account changes detected during last 5 minutes\n\n"
-        em = EmailReport(subject=org + "Alert - User account was changed", body=mailbody, table=table)
+        mailbody = "{count} Devices were active today \n\n".format(count=count)
+        em = EmailReport(subject=org + "Alert - Active Devices", body=mailbody, table=table)
         if args.email:
             em.sendEmail()
 

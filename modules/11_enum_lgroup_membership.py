@@ -5,8 +5,6 @@ import sys
 import jinja2
 import configparser
 
-from datetime import datetime
-
 framework_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
 os.chdir(framework_path)
 sys.path.append('./classes')
@@ -23,6 +21,7 @@ PERIOD = '5m'
 ## MAIN CONFIGURATION FILE PATH
 MAIN_CONFIG = "configs/main.cfg"
 TEMPLATE_FILE = "table_template.html"
+ITEM_PATH_EXCLUSIONS = "exclusions/processes/caller_process.lst"
 
 def main():
     # handling debug arguments
@@ -45,7 +44,7 @@ def main():
     index = config.get('CONFIGURATIONS', 'INDEX')
 
     ## query id needs to change for each script
-    estack.setRangeQuery(event_id=1100, period=PERIOD)
+    estack.setRangeQuery(event_id=4798, period=PERIOD)
 
     # required a api call modification based on the query
     result = estack.es.search(index=index, body=estack.query, size=1000)
@@ -53,28 +52,24 @@ def main():
 
     # logic to trigger tge emails. set subject and body to send the emails to the listed recepients
     count = result['hits']['total']['value']
-
     if count > THRESHOLD:
+        excludedItems = list(map(str.strip, open(ITEM_PATH_EXCLUSIONS, 'r').readlines()))
         hits = result['hits']['hits']
+        itemName = "CallerProcessName"
 
-        header = ["Timestamp", "Computer Name", "Action"]
-        artifacts = [header]
-        for record in hits:
-            if args.debug:
-                print(record)
-            # from python 3.7 onwards datetime.fromisoformat is available
-            source = record['_source']
-            _timestamp = datetime.strptime(source['@timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%H:%M:%S")
-            
-            artifacts.append([_timestamp, source['winlog']['computer_name'], source['event']['action']])
+        header = ["Timestamp", "Computer Name", "Executable Path", "Subject User", "Target User",]
+        fieldList = [itemName, "SubjectUserName", "TargetUserName"]
 
-        table = template.render(artifacts=artifacts)
+        counter, artifacts = controller_exc(excludedItems=excludedItems, hits=hits, header=header, itemName=itemName, fieldList=fieldList, debug=args.debug)
+
+        if counter :
+            table = template.render(artifacts=artifacts)
             
-        org = "[ " + config.get('GENERAL', 'ORG') + " ] "
-        mailbody = "Logging service shutdowns were detected during last 5 minutes\n\n"
-        em = EmailReport(subject=org + "Alert - Logging service shutdown", body=mailbody, table=table)
-        if args.email:
-            em.sendEmail()
+            org = "[ " + config.get('GENERAL', 'ORG') + " ] "
+            mailbody = "{counter}/{count} Local group membership enumeration were detected during last 5 minutes\n\n".format(counter=counter, count=count)
+            em = EmailReport(subject=org + "Alert - Local group membership enumerated [Excluding the defined exclusions]", body=mailbody, table=table)
+            if args.email:
+                em.sendEmail()
 
 if __name__ == '__main__':
     main()

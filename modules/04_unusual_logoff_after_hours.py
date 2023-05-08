@@ -45,7 +45,7 @@ def main():
     index = config.get('CONFIGURATIONS', 'INDEX')
 
     ## query id needs to change for each script
-    estack.setUserQuery(event_id=4624, period=PERIOD)
+    estack.setElementQuery(event_id=4634, period=PERIOD)
 
     # required a api call modification based on the query
     result = estack.es.search(index=index, body=estack.query, size=1000)
@@ -54,19 +54,17 @@ def main():
     # logic to trigger the emails. set subject and body to send the emails to the listed recepients
     count = result['hits']['total']['value']
     if count > THRESHOLD:
-        hits = result['aggregations']['username']['buckets']
+        hits = result['aggregations']['element']['buckets']
 
         header = ["User Name", "Count"]
-        artifacts = [header]
-
-        for record in hits:
-            # from python 3.7 onwards datetime.fromisoformat is available
-            artifacts.append([record['key'],record['doc_count']])
+        artifacts = controller_agg(hits=hits, header=header)
 
         table = template.render(artifacts=artifacts)
+
         org = "[ " + config.get('GENERAL', 'ORG') + " ] "
-        mailbody = "{count} user loggins were detected during last hour\n\n".format(count=count)
-        em = EmailReport(subject=org + "Alert - Unusual Successfull Login", body=mailbody, table=table)
+
+        mailbody = "{count} user logoffs were detected during last 1 hour\n\n".format(count=count)
+        em = EmailReport(subject=org + "Alert - Unusual Logoff", body=mailbody, table=table)
         if args.email:
             em.sendEmail()
 

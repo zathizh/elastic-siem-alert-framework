@@ -17,13 +17,12 @@ from emailreport import EmailReport
 from elasticstack import ElasticStack
 
 ## Gloabl variable, if needs to compare against something
-THRESHOLD = 0
+THRESHOLD = 4
 PERIOD = '5m'
 
 ## MAIN CONFIGURATION FILE PATH
 MAIN_CONFIG = "configs/main.cfg"
 TEMPLATE_FILE = "table_template.html"
-ITEM_IMAGE_PATH_EXCLUSIONS = "exclusions/services/image_paths.lst" 
 
 def main():
     # handling debug arguments
@@ -46,42 +45,48 @@ def main():
     index = config.get('CONFIGURATIONS', 'INDEX')
 
     ## query id needs to change for each script
-    estack.setRangeQuery(event_id=7045, period=PERIOD)
+    estack.setRangeQuery(event_id=4625, period=PERIOD)
 
     # required a api call modification based on the query
     result = estack.es.search(index=index, body=estack.query, size=1000)
     debugging(args, query=estack.query, result=result)
 
-    # logic to trigger tge emails. set subject and body to send the emails to the listed recepients
+    # logic to trigger the emails. set subject and body to send the emails to the listed recepients
     count = result['hits']['total']['value']
     if count > THRESHOLD:
-        excluded_items = list(map(str.strip, open(ITEM_IMAGE_PATH_EXCLUSIONS, 'r').readlines()))
         hits = result['hits']['hits']
 
-        header = ["Timestamp", "Computer Name", "Provider Name", "Image Path", "Service Name", "Service Type"]
+        protocol= config.get('GENERAL', 'SCHEME')
+        baseurl= config.get('GENERAL', 'FQDN')
+        port= config.get('GENERAL', 'PORT')
+
+        header =  ["Timestamp", "User Name", "Computer Name", "URL"]
         artifacts = [header]
-        counter = 0
+
         for record in hits:
+            if args.debug:
+                print(record['_source'])
             # from python 3.7 onwards datetime.fromisoformat is available
-            source = record['_source']['winlog']
-            event_data = source['event_data']
-            item = source['event_data']['ImagePath']
+            _index = record['_index']
+            _id = record['_id']
             _timestamp = datetime.strptime(record['_source']['@timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%H:%M:%S")
+            if 'user' in record['_source']:
+                _username = record['_source']['user']['name']
+            else:
+                _username = ""
 
-            if item not in excluded_items:
-                if args.debug:
-                    print(item)
-                artifacts.append([_timestamp, source['computer_name'], source['provider_name'], event_data['ImagePath'], event_data['ServiceName'], event_data['ServiceType']])
-                counter+=1
+            _computername = record['_source']['winlog']['computer_name']
 
-        if counter :
-            table = template.render(artifacts=artifacts)
-            
-            org = "[ " + config.get('GENERAL', 'ORG') + " ] "
-            mailbody = "{counter}/{count} New Service installations were detected during last 5 minutes\n\n".format(counter=counter, count=count)
-            em = EmailReport(subject=org + "Alert - Service Installed [Excluding the defined exclusions]", body=mailbody, table=table)
-            if args.email:
-                em.sendEmail()
+            _url = "{protocol}://{baseurl}:{port}/{_index}/_doc/{_id}".format(protocol=protocol, baseurl=baseurl, port=port, _index=_index, _id=_id)
+            artifacts.append([_timestamp, _username, _computername, _url])
+
+        table = template.render(artifacts=artifacts)
+
+        org = "[ " + config.get('GENERAL', 'ORG') + " ] "
+        mailbody = "{count} user login failures were detected during last 5 minutes\n\n".format(count=count)
+        em = EmailReport(subject=org + "Alert - Login Failure", body=mailbody, table=table)
+        if args.email:
+            em.sendEmail()
 
 if __name__ == '__main__':
     main()

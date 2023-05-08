@@ -5,8 +5,6 @@ import sys
 import jinja2
 import configparser
 
-from datetime import datetime
-
 framework_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
 os.chdir(framework_path)
 sys.path.append('./classes')
@@ -18,7 +16,7 @@ from elasticstack import ElasticStack
 
 ## Gloabl variable, if needs to compare against something
 THRESHOLD = 0
-PERIOD = '1h'
+PERIOD = '5m'
 
 ## MAIN CONFIGURATION FILE PATH
 MAIN_CONFIG = "configs/main.cfg"
@@ -45,28 +43,29 @@ def main():
     index = config.get('CONFIGURATIONS', 'INDEX')
 
     ## query id needs to change for each script
-    estack.setUserQuery(event_id=4634, period=PERIOD)
+    estack.setRangeQuery(event_id=1100, period=PERIOD)
 
     # required a api call modification based on the query
     result = estack.es.search(index=index, body=estack.query, size=1000)
     debugging(args, query=estack.query, result=result)
 
-    # logic to trigger the emails. set subject and body to send the emails to the listed recepients
+    # logic to trigger tge emails. set subject and body to send the emails to the listed recepients
     count = result['hits']['total']['value']
-    if count > THRESHOLD:
-        hits = result['aggregations']['username']['buckets']
 
-        header = ["User Name", "Count"]
-        artifacts = [header]
-        for record in hits:
-            # from python 3.7 onwards datetime.fromisoformat is available
-            artifacts.append([record['key'],record['doc_count']])
+    if count > THRESHOLD:
+        hits = result['hits']['hits']
+
+        header = ["Timestamp", "Computer Name", "Action"]
+        src = "event"
+        fieldList = ["action"]
+
+        artifacts = controller(hits=hits, header=header, evt=None, fieldList=fieldList, debug=args.debug, src=src)
 
         table = template.render(artifacts=artifacts)
-
+            
         org = "[ " + config.get('GENERAL', 'ORG') + " ] "
-        mailbody = "{count} user logoffs were detected during last 1 hour\n\n".format(count=count)
-        em = EmailReport(subject=org + "Alert - Unusual Logoff", body=mailbody, table=table)
+        mailbody = "Logging service shutdowns were detected during last 5 minutes\n\n"
+        em = EmailReport(subject=org + "Alert - Logging service shutdown", body=mailbody, table=table)
         if args.email:
             em.sendEmail()
 
