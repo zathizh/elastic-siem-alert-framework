@@ -16,6 +16,7 @@ from elasticstack import ElasticStack
 ## Gloabl variable, if needs to compare against something
 THRESHOLD = 0
 PERIOD = '5m'
+EVENTID = 4104
 
 ## MAIN CONFIGURATION FILE PATH
 MAIN_CONFIG = "configs/main.cfg"
@@ -36,7 +37,7 @@ def main():
     index = config.get('CONFIGURATIONS', 'INDEX')
 
     ## query id needs to change for each script
-    estack.setRangeQuery(event_id=4104, period=PERIOD)
+    estack.setRangeQuery(event_id=EVENTID, period=PERIOD)
 
     # required a api call modification based on the query
     result = estack.es.count(index=index, body=estack.query)

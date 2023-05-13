@@ -19,6 +19,7 @@ from elasticstack import ElasticStack
 ## Gloabl variable, if needs to compare against something
 THRESHOLD = 0
 PERIOD = '1h'
+EVENTID = 4634
 
 ## MAIN CONFIGURATION FILE PATH
 MAIN_CONFIG = "configs/main.cfg"
@@ -45,7 +46,7 @@ def main():
     index = config.get('CONFIGURATIONS', 'INDEX')
 
     ## query id needs to change for each script
-    estack.setElementQuery(event_id=4634, period=PERIOD)
+    estack.setElementQuery(event_id=EVENTID, period=PERIOD)
 
     # required a api call modification based on the query
     result = estack.es.search(index=index, body=estack.query, size=1000)

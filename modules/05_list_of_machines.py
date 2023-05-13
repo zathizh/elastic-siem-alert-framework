@@ -19,6 +19,7 @@ from elasticstack import ElasticStack
 ## Gloabl variable, if needs to compare against something
 THRESHOLD = 0
 PERIOD = '5m'
+#EVENTID = XXXX
 
 ## MAIN CONFIGURATION FILE PATH
 MAIN_CONFIG = "configs/main.cfg"
